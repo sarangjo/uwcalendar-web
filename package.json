@@ -10,9 +10,10 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "ejs": "2.4.1",
+    "body-parser": "^1.15.2",
     "express": "4.13.3",
-    "firebase": "^3.5.2"
+    "firebase": "^3.5.2",
+    "lodash": "^4.16.4"
   },
   "repository": {
     "type": "git",
@@ -21,7 +22,9 @@
   "keywords": [
     "node",
     "heroku",
-    "express"
+    "express",
+    "uwcalendar",
+    "uwcalendar-web"
   ],
   "license": "MIT"
 }
