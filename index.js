@@ -30,6 +30,10 @@ router.get('/', function(req, res) {
   res.json({ message: 'Welcome to the UW Calendar API!' });
 });
 
+/**
+ * POST /api/connect/
+ * Params: userA, userB: user ID's from Firebase
+ */
 router.route('/connect')
   .post(function(req, res) {
     var userA = req.body.userA;
