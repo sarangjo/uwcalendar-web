@@ -1,3 +1,5 @@
+// TODO: make ES6-y
+
 var express = require('express');
 var firebase = require('firebase');
 var bodyParser = require('body-parser');
@@ -38,8 +40,11 @@ router.route('/connect')
   .post(function(req, res) {
     var userA = req.body.userA;
     var userB = req.body.userB;
-    connect(db, userA, userB, 'sp16').then(function resolve() {
-      res.json({ message: 'Success' });
+    var request = req.body.request;
+    var quarter = req.body.quarter;
+    connect(db, userA, userB, request, quarter).then(function resolve(status) {
+      console.log(status);
+      res.json({ message: status });
     }, function reject(reason) {
       res.json({ message: 'Failed. Reason: ' + reason });
     });

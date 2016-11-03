@@ -1,9 +1,22 @@
+"use strict"
+
+// TODO: make ES6-y
+
 var _ = require('lodash');
 
 var NUMBER_OF_DAYS = 5;
 var LATEST_TIME = '23:59';
 
-// TODO: make a Day model object?
+var SCHEDULES_KEY = 'schedules';
+var REQUESTS_KEY = 'requests';
+var USERS_KEY = 'users';
+var CONNECTIONS_KEY = 'connections';
+var PARTICIPANTS_KEY = 'participants';
+var DATA_KEY = 'data';
+var CONNECTION_ID_KEY = 'connectionId';
+var CONNECTION_WITH_KEY = 'with';
+
+var NO_CLASS = 'NO_CLASS';
 
 /**
  * @param {object} quarter a quarter snapshot from Firebase
@@ -39,7 +52,7 @@ function getWeek(quarter) {
           time: singleClass.start, currentClass: singleClass.name // TODO: save full class
         });
         day.push({
-          time: singleClass.end, currentClass: null // indicates the class is over
+          time: singleClass.end, currentClass: NO_CLASS // indicates the class is over
         });
       }
     });
@@ -57,13 +70,6 @@ function getWeek(quarter) {
  * Combines days
  */
 function combineDays(days) {
-  console.log();
-  console.log("Days:");
-  console.log(days);
-  console.log();
-  console.log();
-  console.log();
-
   // Each day should be well-formed.
   // - at least one class
   // - start and end of each class --> length divisible by 2
@@ -73,42 +79,10 @@ function combineDays(days) {
 
   var combinedDay = [];
 
-  //////// START ALGORITHM 1
-  // // First, combine all the markers in each day
-  // days.forEach(function(day, dayIndex) {
-  //   // Add all markers from this day
-  //   day.forEach(function(marker) {
-  //     var classes = new Array(days.length).fill(undefined);
-  //     classes[dayIndex] = marker.currentClass;
-  //     combinedDay.push({
-  //       time: marker.time,
-  //       classes: classes
-  //     });
-  //   })
-  // });
-  //
-  // // Sort by time
-  // combinedDay.sort(function(a, b) {
-  //   return ((a.time > b.time) ? 1 : ((a.time < b.time) ? -1 : 0));
-  // });
-  //
-  // // Then go through one day at a time and update all markers between start and end of that day's classes
-  // var currentClass;
-  // days.forEach(function(day, i) {
-  //   currentClass = null;
-  //   combinedDay.forEach(function(marker) {
-  //     // Set the start point
-  //     if (marker.classes[i]) currentClass = marker.classes[i];
-  //     else if (marker.classes[i] !== null) marker.classes[i] = currentClass;
-  //   });
-  // });
-  //////// END ALGORITHM 1
-
-  //////// START ALGORITHM 2
+  //////// START ALGORITHM
   var indices = new Array(days.length).fill(0); // which marker we are considering for each day
-  var classes = new Array(days.length).fill(null); // the current set of classes that are active for the current time slot
+  var classes = new Array(days.length).fill(NO_CLASS); // the current set of classes that are active for the current time slot
   var validIndices = (1 << days.length) - 1; // a bitset that keeps track of which days still have markers left to consider; starts out as all 1's
-  console.log(validIndices);
 
   // Go as long as there is at least 1 index that is valid
   while (validIndices) {
@@ -150,88 +124,63 @@ function combineDays(days) {
       }
     });
 
-    console.log(validIndices);
-    // break; // TODO remove with real logic
+    console.log('Days left: ' + validIndices);
   }
-  //////// END ALGORITHM 2
-
-  console.log('Earliest markers (day indices):');
-  console.log(earliestMarkers);
-  console.log('Earliest time of both schedules:');
-  console.log(earliestTime);
-
-  console.log('Combined day:');
-  console.log(combinedDay);
+  //////// END ALGORITHM
 
   return combinedDay;
 }
 
-function connectQuarters(quarterA, quarterB) {
-  // Now that the quarters have been retrieved, compile them
+/**
+ * TODO
+ */
+function combineQuartersIntoWeek(quarterA, quarterB) {
+  // Now that the quarters have been retrieved, sanitize and combine them
   quarterA = sanitize(quarterA);
   quarterB = sanitize(quarterB);
 
   var weekA = getWeek(quarterA);
   var weekB = getWeek(quarterB);
-  var combinedWeek = [];
 
-var i = 0;
-  // for (var i = 0; i < weekA.length; i++) {
-    combinedWeek.push(combineDays([weekA[i], weekB[i]]));
-  // }
+  var combinedWeek = weekA.map(function(dayOfWeek, i) {
+    return combineDays([dayOfWeek, weekB[i]]);
+  });
 
-        // Map<String, List<Day>> connectedQuarters = Schedule.connect(schedule1, schedule2);
-        //
-        // if (connectedQuarters.isEmpty()) {
-        //     // For now, do nothing because there was an issue with the schedules
-        //     return;  // TODO: what?
-        // }
-        //
-        // // Add to the connections collection
-        // DatabaseReference connRef = fb.getConnectionsRef().push();
-        //
-        // // 1. Participants
-        // DatabaseReference participantsRef = connRef.child(FirebaseData.PARTICIPANTS_KEY);
-        //
-        // participantsRef.push().setValue(r.usernameAndId.id);
-        // participantsRef.push().setValue(fb.getUid());
-        //
-        // // 2. Actual connection data
-        // DatabaseReference dataRef = connRef.child(FirebaseData.DATA_KEY);
-        //
-        // // TODO: probably abstract this out
-        // for (String qtr : connectedQuarters.keySet()) {
-        //     DatabaseReference qtrRef = dataRef.child(qtr);
-        //     List<Day> days = connectedQuarters.get(qtr);
-        //     for (int i = 0; i < days.size(); ++i) {
-        //         Day d = days.get(i);
-        //         DatabaseReference dayRef = qtrRef.child(i + "");
-        //
-        //         List<Segment> segs = d.getSegments();
-        //         for (Segment s : segs) {
-        //             // Special case to save a fully empty day
-        //             if (s.classesMap.isEmpty() && segs.size() != 1)
-        //                 continue;
-        //             fb.saveSegment(dayRef.push(), s);
-        //         }
-        //     }
-        // }
-        //
-        // // Add to both users' connections list:
-        // // Self
-        // DatabaseReference userConn = fb.getCurrentUserRef().child(FirebaseData.CONNECTIONS_KEY).push();
-        // userConn.child(FirebaseData.CONNECTION_ID_KEY).setValue(connRef.getKey());
-        // userConn.child(FirebaseData.CONNECTION_WITH_KEY).setValue(r.usernameAndId.id);
-        //
-        // // Other
-        // userConn = fb.getUsersRef().child(r.usernameAndId.id).child(FirebaseData.CONNECTIONS_KEY).push();
-        // userConn.child(FirebaseData.CONNECTION_ID_KEY).setValue(connRef.getKey());
-        // userConn.child(FirebaseData.CONNECTION_WITH_KEY).setValue(fb.getUid());
-        //
-        // // Delete the request
-        // fb.getRequestsRef().child(fb.getUid()).child(r.key).removeValue();
-        //
-        // mDialog.hide();
+  console.log(JSON.stringify(combinedWeek));
+
+  return combinedWeek;
+}
+
+/**
+ * @return {Promise} a promise
+ */
+function saveConnection(db, combinedWeek, quarter, userA, userB) {
+  // Creating a promise
+  return new Promise(function (resolve, reject) {
+    // Add to connections collection
+    var connRef = db.ref(CONNECTIONS_KEY).push();
+
+    // 1. Participants
+    connRef.child(PARTICIPANTS_KEY).push(userA);
+    connRef.child(PARTICIPANTS_KEY).push(userB);
+    // 2. Data
+    var dataRef = connRef.child(DATA_KEY);
+    var quarterRef = dataRef.child(quarter);
+    quarterRef.set(combinedWeek);
+
+    // Add to users' connections child
+    var usersRef = db.ref(USERS_KEY);
+    var userAConnRef = usersRef.child(userA).child(CONNECTIONS_KEY).push({
+      [CONNECTION_ID_KEY]: connRef.key,
+      [CONNECTION_WITH_KEY]: userB
+    });
+    var userBConnRef = usersRef.child(userB).child(CONNECTIONS_KEY).push({
+      [CONNECTION_ID_KEY]: connRef.key,
+      [CONNECTION_WITH_KEY]: userA
+    });
+
+    resolve('Connection saved.');
+  });
 }
 
 /**
@@ -239,14 +188,20 @@ var i = 0;
  *
  * @return {Promise}
  */
-function connect(db, userA, userB, quarterId) {
-  // TODO: confirm that a request exists?
+function connect(db, userA, userB, request, quarterId) {
+  if (!(db && userA && userB && request && quarterId)) {
+    return Promise.reject('Invalid parameters.');
+  }
+
+  // TODO: confirm that a request exists
+  // TODO: confirm that a connection doesn't exist
 
   // Download schedule for both users
-  var schedulesRef = db.ref('schedules');
+  var schedulesRef = db.ref(SCHEDULES_KEY);
   var userARef = schedulesRef.child(userA + '/' + quarterId);
   var userBRef = schedulesRef.child(userB + '/' + quarterId);
 
+  // TODO: clean up big-time
   var userAQuarter, userBQuarter;
   return userARef.once('value') // returns a Promise
     .then(function(snapshot) {
@@ -257,10 +212,20 @@ function connect(db, userA, userB, quarterId) {
       })
       .then(function() {
         if (userAQuarter && userBQuarter) {
-          return connectQuarters(userAQuarter, userBQuarter);
-        } else {
-          return Promise.reject('Both users need to have schedules for ' + quarterId + '.');
+          var combinedWeek = combineQuartersIntoWeek(userAQuarter, userBQuarter);
+
+          if (combinedWeek) {
+            // return Promise.resolve('Yay!');
+            return saveConnection(db, combinedWeek, quarterId, userA, userB).then(function() {
+              var reqRef = db.ref(REQUESTS_KEY);
+              reqRef.child(userA + '/' + request).set(null);
+              reqRef.child(userB + '/' + request).set(null);
+              return 'Success';
+            });
+          }
+          return Promise.reject('Combining quarters failed.');
         }
+        return Promise.reject('Both users need to have schedules for ' + quarterId + '.');
       });
     });
 }
