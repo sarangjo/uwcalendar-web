@@ -80,6 +80,7 @@ function combineDays(days) {
   var combinedDay = [];
 
   //////// START ALGORITHM
+  // TODO: update all of these to maps of (user --> data) as opposed to (user index --> data)
   var indices = new Array(days.length).fill(0); // which marker we are considering for each day
   var classes = new Array(days.length).fill(NO_CLASS); // the current set of classes that are active for the current time slot
   var validIndices = (1 << days.length) - 1; // a bitset that keeps track of which days still have markers left to consider; starts out as all 1's
@@ -103,18 +104,15 @@ function combineDays(days) {
     });
 
     // Set the corresponding classes in `classes` to be the classes contained in each marker
+    // Move the current indices for the days just updated
     earliestMarkers.forEach(function(dayIndex) {
       classes[dayIndex] = days[dayIndex][indices[dayIndex]].currentClass;
+      indices[dayIndex]++;
     });
 
     // Push a new marker with `classes` and the time of the marker
     combinedDay.push({
       time: earliestTime, classes: _.cloneDeep(classes)
-    });
-
-    // Move the current indices for the days just updated
-    earliestMarkers.forEach(function(dayIndex) {
-      indices[dayIndex]++;
     });
 
     // Update the value of validIndices
@@ -189,8 +187,14 @@ function saveConnection(db, combinedWeek, quarter, userA, userB) {
  * @return {Promise}
  */
 function connect(db, userA, userB, request, quarterId) {
-  if (!(db && userA && userB && request && quarterId)) {
-    return Promise.reject('Invalid parameters.');
+  var error = '';
+  if (!db) error += 'Invalid database object.\n';
+  if (!userA) error += 'Invalid userA.\n';
+  if (!userB) error += 'Invalid userB.\n';
+  if (!request) error += 'Invalid request id.\n';
+  if (!quarterId) error += 'Invalid quarter.\n';
+  if (error) {
+    return Promise.reject(error);
   }
 
   // TODO: confirm that a request exists

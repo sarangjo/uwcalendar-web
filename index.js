@@ -38,6 +38,7 @@ router.get('/', function(req, res) {
  */
 router.route('/connect')
   .post(function(req, res) {
+    console.log(req.body);
     var userA = req.body.userA;
     var userB = req.body.userB;
     var request = req.body.request;
@@ -46,7 +47,8 @@ router.route('/connect')
       console.log(status);
       res.json({ message: status });
     }, function reject(reason) {
-      res.json({ message: 'Failed. Reason: ' + reason });
+      // TODO make reason include the code and message
+      res.status(400).json({ message: 'Failed. Reason: ' + reason });
     });
   });
 
