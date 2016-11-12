@@ -73,32 +73,33 @@ function combineDays(days) {
   // Each day should be well-formed.
   // - at least one class
   // - start and end of each class --> length divisible by 2
-  if(days.some(function(day) { return !day.length || (day.length % 2); })) {
+  if(days.values.some(function(day) { return !day.length || (day.length % 2); })) {
     return null;
   }
 
   var combinedDay = [];
 
   //////// START ALGORITHM
-  // TODO: update all of these to maps of (user --> data) as opposed to (user index --> data)
-  var indices = new Array(days.length).fill(0); // which marker we are considering for each day
-  var classes = new Array(days.length).fill(NO_CLASS); // the current set of classes that are active for the current time slot
-  var validIndices = (1 << days.length) - 1; // a bitset that keeps track of which days still have markers left to consider; starts out as all 1's
+  // TODO: optimize by only interating once?
+  var indices = _.mapValues(days, () => 0); // which marker we are considering for each day
+  var classes = _.mapValues(days, () => NO_CLASS); // the current set of classes that are active for the current time slot
+  var validIndices = _.mapValues(days, () => true); // keeps track of which users still have markers left to consider; starts out as all true's
 
+  // TODO figure this out
   // Go as long as there is at least 1 index that is valid
   while (validIndices) {
     // Find which markers of the current ones are the earliest so far
     var earliestMarkers = [];
     var earliestTime = LATEST_TIME;
-    days.forEach(function(day, dayIndex) {
-      if (validIndices & 1 << dayIndex) {
-        var currMarker = day[indices[dayIndex]];
+    _.forOwn(days, (day, userId) => {
+      if (validIndices & 1 << userId) {
+        var currMarker = day[indices[userId]];
 
         if (currMarker.time < earliestTime) {
-          earliestMarkers = [dayIndex];
+          earliestMarkers = [userId];
           earliestTime = currMarker.time;
         } else if (currMarker.time == earliestTime) {
-          earliestMarkers.push(dayIndex);
+          earliestMarkers.push(userId);
         }
       }
     });
