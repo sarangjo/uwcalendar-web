@@ -3,43 +3,16 @@
 // TODO: make ES6-y
 
 var _ = require('lodash');
+var FbConstants = require('./constants.js');
 
 var NUMBER_OF_DAYS = 5;
 var LATEST_TIME = '23:59';
 
-var SCHEDULES_KEY = 'schedules';
-var REQUESTS_KEY = 'requests';
-var USERS_KEY = 'users';
-var CONNECTIONS_KEY = 'connections';
-var PARTICIPANTS_KEY = 'participants';
-var DATA_KEY = 'data';
-var CONNECTION_ID_KEY = 'connectionId';
-var CONNECTION_WITH_KEY = 'with';
-
 var NO_CLASS = 'NO_CLASS';
 
 /**
- * @param {object} quarter a quarter snapshot from Firebase
- * @returns {list} a list of sanitized classes
- */
-function sanitize(quarter) {
-  var sanitizedQuarter = [];
-  _.forOwn(quarter, function(value) {
-    sanitizedQuarter.push(value);
-  });
-  return sanitizedQuarter;
-}
-
-/**
- * @param {day} a a day object
- */
-function dayComp(a, b) {
-  return ((a.time < b.time) ? -1 : ((a.time > b.time) ? 1 : 0));
-}
-
-/**
- * Given a quarter, returns a week representation.
- */
+* Given a quarter, returns a week representation.
+*/
 function getWeek(quarter) {
   var week = [];
 
@@ -58,7 +31,7 @@ function getWeek(quarter) {
     });
 
     // Sort day by time of each segment
-    day.sort(dayComp);
+    day.sort((a, b) => ((a.time < b.time) ? -1 : ((a.time > b.time) ? 1 : 0)));
 
     week[i] = day;
   }
@@ -67,25 +40,24 @@ function getWeek(quarter) {
 }
 
 /**
- * Combines days
- */
+* @param {list} days a list of days to combine
+* Combines days.
+*/
 function combineDays(days) {
   // Each day should be well-formed.
   // - at least one class
   // - start and end of each class --> length divisible by 2
-  if(days.values.some(function(day) { return !day.length || (day.length % 2); })) {
+  if (days.values.some(function(day) { return !day.length || (day.length % 2); })) {
     return null;
   }
 
   var combinedDay = [];
 
   //////// START ALGORITHM
-  // TODO: optimize by only interating once?
   var indices = _.mapValues(days, () => 0); // which marker we are considering for each day
   var classes = _.mapValues(days, () => NO_CLASS); // the current set of classes that are active for the current time slot
   var validIndices = _.mapValues(days, () => true); // keeps track of which users still have markers left to consider; starts out as all true's
 
-  // TODO figure this out
   // Go as long as there is at least 1 index that is valid
   while (validIndices) {
     // Find which markers of the current ones are the earliest so far
@@ -131,12 +103,14 @@ function combineDays(days) {
 }
 
 /**
- * TODO
- */
+* Combines two quarters into a single week representation.
+* @param {Snapshot} quarterA the Firebase snapshot for quarterA
+* @param {Snapshot} quarterB the Firebase snapshot for quarterB
+*/
 function combineQuartersIntoWeek(quarterA, quarterB) {
   // Now that the quarters have been retrieved, sanitize and combine them
-  quarterA = sanitize(quarterA);
-  quarterB = sanitize(quarterB);
+  quarterA = _.values(quarterA);
+  quarterB = _.values(quarterB);
 
   var weekA = getWeek(quarterA);
   var weekB = getWeek(quarterB);
@@ -151,8 +125,8 @@ function combineQuartersIntoWeek(quarterA, quarterB) {
 }
 
 /**
- * @return {Promise} a promise
- */
+* @return {Promise} a promise
+*/
 function saveConnection(db, combinedWeek, quarter, userA, userB) {
   // Creating a promise
   return new Promise(function (resolve, reject) {
@@ -183,10 +157,10 @@ function saveConnection(db, combinedWeek, quarter, userA, userB) {
 }
 
 /**
- * Connects the schedules for users.
- *
- * @return {Promise}
- */
+* Connects the schedules for users.
+*
+* @return {Promise}
+*/
 function connect(db, userA, userB, request, quarterId) {
   var error = '';
   if (!db) error += 'Invalid database object.\n';
@@ -206,33 +180,29 @@ function connect(db, userA, userB, request, quarterId) {
   var userARef = schedulesRef.child(userA + '/' + quarterId);
   var userBRef = schedulesRef.child(userB + '/' + quarterId);
 
-  // TODO: clean up big-time
   var userAQuarter, userBQuarter;
-  return userARef.once('value') // returns a Promise
-    .then(function(snapshot) {
-      userAQuarter = snapshot.val();
-    }).then(function() {
-      return userBRef.once('value').then(function(snapshot) {
-        userBQuarter = snapshot.val();
-      })
-      .then(function() {
-        if (userAQuarter && userBQuarter) {
-          var combinedWeek = combineQuartersIntoWeek(userAQuarter, userBQuarter);
+  return Promise.all([userARef.once('value'), userBRef.once('value')])
+  .then(values => {
+    userAQuarter = values[0].val();
+    userBQuarter = values[1].val();
 
-          if (combinedWeek) {
-            // return Promise.resolve('Yay!');
-            return saveConnection(db, combinedWeek, quarterId, userA, userB).then(function() {
-              var reqRef = db.ref(REQUESTS_KEY);
-              reqRef.child(userA + '/' + request).set(null);
-              reqRef.child(userB + '/' + request).set(null);
-              return 'Success';
-            });
-          }
-          return Promise.reject('Combining quarters failed.');
-        }
-        return Promise.reject('Both users need to have schedules for ' + quarterId + '.');
+    var combinedWeek = combineQuartersIntoWeek(userAQuarter, userBQuarter);
+
+    if (combinedWeek) {
+      // TODO: clean up
+      return saveConnection(db, combinedWeek, quarterId, userA, userB).then(function() {
+        var reqRef = db.ref(REQUESTS_KEY);
+        reqRef.child(userA + '/' + request).set(null);
+        reqRef.child(userB + '/' + request).set(null);
+        return 'Success';
       });
-    });
+    }
+    return Promise.reject('Combining quarters failed.');
+  }, reason => {
+    console.log(reason);
+
+    return Promise.reject('Both users need to have schedules for ' + quarterId + '.');
+  });
 }
 
 module.exports = connect;
