@@ -132,6 +132,8 @@ function combineQuartersIntoWeek(quarterA, quarterB, userA, userB) {
   var weekA = getWeek(quarterA);
   var weekB = getWeek(quarterB);
 
+  // TODO: fix when one user has no classes on a particular day
+  
   var combinedWeek = weekA.map(function(dayWeekA, i) {
     return combineDays({
       userA: dayWeekA,
@@ -147,30 +149,13 @@ function combineQuartersIntoWeek(quarterA, quarterB, userA, userB) {
 /**
 * @return {Promise} a promise
 */
-function saveConnection(db, combinedWeek, quarter, userA, userB) {
+function saveConnection(db, combinedWeek, quarter, connectionId) {
   // Creating a promise
   return new Promise(function (resolve, reject) {
-    // Add to connections collection
-    var connRef = db.ref(Constants.CONNECTIONS_KEY).push();
-
-    // 1. Participants
-    connRef.child(Constants.PARTICIPANTS_KEY).push(userA);
-    connRef.child(Constants.PARTICIPANTS_KEY).push(userB);
-    // 2. Data
-    var dataRef = connRef.child(Constants.DATA_KEY);
-    var quarterRef = dataRef.child(quarter);
+    // Save Data
+    var quarterRef = db.ref(Constants.CONNECTIONS_KEY)
+      .child(connectionId).child(Constants.DATA_KEY).child(quarter);
     quarterRef.set(combinedWeek);
-
-    // Add to users' connections child
-    var usersRef = db.ref(Constants.USERS_KEY);
-    var userAConnRef = usersRef.child(userA).child(Constants.CONNECTIONS_KEY).push({
-      [Constants.CONNECTION_ID_KEY]: connRef.key,
-      [Constants.CONNECTION_WITH_KEY]: userB
-    });
-    var userBConnRef = usersRef.child(userB).child(Constants.CONNECTIONS_KEY).push({
-      [Constants.CONNECTION_ID_KEY]: connRef.key,
-      [Constants.CONNECTION_WITH_KEY]: userA
-    });
 
     resolve('Connection saved.');
   });
@@ -225,4 +210,52 @@ function connect(db, userA, userB, request, quarterId) {
   });
 }
 
-module.exports = connect;
+function connect2(db, connectionId, quarterId) {
+  var error = '';
+  if (!db) error += 'Invalid database object.\n';
+  if (!connectionId) error += 'Invalid connectionId id.\n';
+  if (!quarterId) error += 'Invalid quarter.\n';
+  if (error) {
+    return Promise.reject(error);
+  }
+
+  // TODO: confirm that a connection exists
+
+  // Download schedule for both users
+  var participantsRef = db.ref(Constants.CONNECTIONS_KEY + '/' + connectionId + '/' + Constants.PARTICIPANTS_KEY);
+  return participantsRef.once('value').then(function(snapshot) {
+    // Get participants
+    var i = 0;
+    var userA = null, userB = null;
+    snapshot.forEach(function(child) {
+      if (i++ == 0) userA = child.val();
+      else userB = child.val();
+    });
+
+    // Download schedules for the current quarter
+    var schedulesRef = db.ref(Constants.SCHEDULES_KEY);
+    var userARef = schedulesRef.child(userA + '/' + quarterId);
+    var userBRef = schedulesRef.child(userB + '/' + quarterId);
+
+    var userAQuarter, userBQuarter;
+    return Promise.all([userARef.once('value'), userBRef.once('value')])
+    .then(values => {
+      userAQuarter = values[0].val();
+      userBQuarter = values[1].val();
+
+      var combinedWeek = combineQuartersIntoWeek(userAQuarter, userBQuarter, userA, userB);
+
+      if (combinedWeek) {
+        // TODO: clean up
+        return saveConnection(db, combinedWeek, quarterId, connectionId);
+      }
+      return Promise.reject('Combining quarters failed.');
+    }, reason => {
+      console.log(reason);
+
+      return Promise.reject('Both users need to have schedules for ' + quarterId + '.');
+    });
+  });
+}
+
+module.exports = connect2;

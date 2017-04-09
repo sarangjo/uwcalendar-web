@@ -8,7 +8,7 @@ var connect = require('./connect');
 var app = express();
 
 firebase.initializeApp({
-  serviceAccount: 'uwcalendar-69fc31da40b7.json',
+  serviceAccount: 'uwcalendar-69fc31da40b7.json', // TODO: fix this
   databaseURL: 'https://uwcalendar.firebaseio.com'
 });
 
@@ -38,18 +38,13 @@ router.get('/', function(req, res) {
  * Connects two schedules together.
  *
  * Params:
- * - userA, userB: user ID's from Firebase
- * - request: request ID from Firebase
+ * - connection: connection ID from Firebase
  * - quarter: quarter ID of the form sp16
  */
 router.route('/connect')
   .post(function(req, res) {
     console.log(req.body);
-    var userA = req.body.userA;
-    var userB = req.body.userB;
-    var request = req.body.request;
-    var quarter = req.body.quarter;
-    connect(db, userA, userB, request, quarter).then(function resolve(status) {
+    connect(db, req.body.connectionId, req.body.quarter).then(function resolve(status) {
       console.log(status);
       res.json({ message: status });
     }, function reject(reason) {
