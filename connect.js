@@ -133,7 +133,7 @@ function combineQuartersIntoWeek(quarterA, quarterB, userA, userB) {
   var weekB = getWeek(quarterB);
 
   // TODO: fix when one user has no classes on a particular day
-  
+
   var combinedWeek = weekA.map(function(dayWeekA, i) {
     return combineDays({
       userA: dayWeekA,
@@ -220,6 +220,7 @@ function connect2(db, connectionId, quarterId) {
   }
 
   // TODO: confirm that a connection exists
+  // TODO: delete data if it exists -- or figure out clever way to update
 
   // Download schedule for both users
   var participantsRef = db.ref(Constants.CONNECTIONS_KEY + '/' + connectionId + '/' + Constants.PARTICIPANTS_KEY);
