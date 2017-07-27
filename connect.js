@@ -1,13 +1,10 @@
 "use strict"
 
-// TODO: make ES6-y
-
 var _ = require('lodash');
 var Constants = require('./constants.js');
 
 var NUMBER_OF_DAYS = 5;
 var LATEST_TIME = '23:59';
-
 var NO_CLASS = 'NO_CLASS';
 
 /**
@@ -20,7 +17,7 @@ function getWeek(quarter) {
   for (var i = 0; i < NUMBER_OF_DAYS; i++) {
     var day = [];
 
-    quarter.forEach(function(singleClass) {
+    quarter.forEach(function (singleClass) {
       if (singleClass.days & (1 << i)) {
         day.push({
           time: singleClass.start, currentClass: singleClass.name // TODO: save full class
@@ -51,7 +48,7 @@ function combineDays(days) {
   // Each day should be well-formed.
   // - at least one class
   // - start and end of each class --> length divisible by 2
-  if (_.values(days).some(function(day) { return !day.length || (day.length % 2); })) {
+  if (_.values(days).some(function (day) { return !day.length || (day.length % 2); })) {
     return null;
   }
 
@@ -65,7 +62,7 @@ function combineDays(days) {
   while (true) {
     // Go as long as there is at least 1 index that is valid
     var allDone = false;
-    _.forOwn(validIndices, function(validIndex) { allDone = allDone || validIndex; });
+    _.forOwn(validIndices, function (validIndex) { allDone = allDone || validIndex; });
     if (!allDone) {
       break;
     }
@@ -89,7 +86,7 @@ function combineDays(days) {
     });
 
     // Set the corresponding classes in `classes` to be the classes contained in each marker
-    earliestMarkers.forEach(function(userId) {
+    earliestMarkers.forEach(function (userId) {
       // Get the day for this user
       var userDay = days[userId];
       // Set that user's class to be its `currentClass`
@@ -104,7 +101,7 @@ function combineDays(days) {
     });
 
     // Update the value of validIndices
-    _.forOwn(indices, function(markerIndex, userId) {
+    _.forOwn(indices, function (markerIndex, userId) {
       if (markerIndex >= days[userId].length && validIndices[userId]) {
         validIndices[userId] = false;
       }
@@ -134,10 +131,10 @@ function combineQuartersIntoWeek(quarterA, quarterB, userA, userB) {
 
   // TODO: fix when one user has no classes on a particular day
 
-  var combinedWeek = weekA.map(function(dayWeekA, i) {
+  var combinedWeek = weekA.map(function (dayWeekA, i) {
     return combineDays({
-      userA: dayWeekA,
-      userB: weekB[i]
+      [userA]: dayWeekA,
+      [userB]: weekB[i]
     });
   });
 
@@ -147,7 +144,7 @@ function combineQuartersIntoWeek(quarterA, quarterB, userA, userB) {
 }
 
 /**
-* @return {Promise} a promise
+* @return {Promise} a promise TODO what?
 */
 function saveConnection(db, combinedWeek, quarter, connectionId) {
   // Creating a promise
@@ -162,10 +159,10 @@ function saveConnection(db, combinedWeek, quarter, connectionId) {
 }
 
 /**
-* Connects the schedules for users.
-*
-* @return {Promise}
-*/
+ * Connects the schedules for users.
+ *
+ * @return {Promise}
+ */
 function connect(db, userA, userB, request, quarterId) {
   var error = '';
   if (!db) error += 'Invalid database object.\n';
@@ -187,27 +184,27 @@ function connect(db, userA, userB, request, quarterId) {
 
   var userAQuarter, userBQuarter;
   return Promise.all([userARef.once('value'), userBRef.once('value')])
-  .then(values => {
-    userAQuarter = values[0].val();
-    userBQuarter = values[1].val();
+    .then(values => {
+      userAQuarter = values[0].val();
+      userBQuarter = values[1].val();
 
-    var combinedWeek = combineQuartersIntoWeek(userAQuarter, userBQuarter, userA, userB);
+      var combinedWeek = combineQuartersIntoWeek(userAQuarter, userBQuarter, userA, userB);
 
-    if (combinedWeek) {
-      // TODO: clean up
-      return saveConnection(db, combinedWeek, quarterId, userA, userB).then(function() {
-        var reqRef = db.ref(Constants.REQUESTS_KEY);
-        reqRef.child(userA + '/' + request).set(null);
-        reqRef.child(userB + '/' + request).set(null);
-        return 'Success';
-      });
-    }
-    return Promise.reject('Combining quarters failed.');
-  }, reason => {
-    console.log(reason);
+      if (combinedWeek) {
+        // TODO: clean up
+        return saveConnection(db, combinedWeek, quarterId, userA, userB).then(function () {
+          var reqRef = db.ref(Constants.REQUESTS_KEY);
+          reqRef.child(userA + '/' + request).set(null);
+          reqRef.child(userB + '/' + request).set(null);
+          return 'Success';
+        });
+      }
+      return Promise.reject('Combining quarters failed.');
+    }, reason => {
+      console.log(reason);
 
-    return Promise.reject('Both users need to have schedules for ' + quarterId + '.');
-  });
+      return Promise.reject('Both users need to have schedules for ' + quarterId + '.');
+    });
 }
 
 function connect2(db, connectionId, quarterId) {
@@ -224,11 +221,11 @@ function connect2(db, connectionId, quarterId) {
 
   // Download schedule for both users
   var participantsRef = db.ref(Constants.CONNECTIONS_KEY + '/' + connectionId + '/' + Constants.PARTICIPANTS_KEY);
-  return participantsRef.once('value').then(function(snapshot) {
+  return participantsRef.once('value').then(function (snapshot) {
     // Get participants
     var i = 0;
     var userA = null, userB = null;
-    snapshot.forEach(function(child) {
+    snapshot.forEach(function (child) {
       if (i++ == 0) userA = child.val();
       else userB = child.val();
     });
@@ -240,22 +237,22 @@ function connect2(db, connectionId, quarterId) {
 
     var userAQuarter, userBQuarter;
     return Promise.all([userARef.once('value'), userBRef.once('value')])
-    .then(values => {
-      userAQuarter = values[0].val();
-      userBQuarter = values[1].val();
+      .then(values => {
+        userAQuarter = values[0].val();
+        userBQuarter = values[1].val();
 
-      var combinedWeek = combineQuartersIntoWeek(userAQuarter, userBQuarter, userA, userB);
+        var combinedWeek = combineQuartersIntoWeek(userAQuarter, userBQuarter, userA, userB);
 
-      if (combinedWeek) {
-        // TODO: clean up
-        return saveConnection(db, combinedWeek, quarterId, connectionId);
-      }
-      return Promise.reject('Combining quarters failed.');
-    }, reason => {
-      console.log(reason);
+        if (combinedWeek) {
+          // TODO: clean up
+          return saveConnection(db, combinedWeek, quarterId, connectionId);
+        }
+        return Promise.reject('Combining quarters failed.');
+      }, reason => {
+        console.log(reason);
 
-      return Promise.reject('Both users need to have schedules for ' + quarterId + '.');
-    });
+        return Promise.reject('Both users need to have schedules for ' + quarterId + '.');
+      });
   });
 }
 

@@ -1,18 +1,21 @@
 // TODO: make ES6-y
 
 var express = require('express');
-var firebase = require('firebase');
+var admin = require('firebase-admin');
 var bodyParser = require('body-parser');
 var connect = require('./connect');
 
 var app = express();
 
-firebase.initializeApp({
-  serviceAccount: 'uwcalendar-69fc31da40b7.json', // TODO: fix this
-  databaseURL: 'https://uwcalendar.firebaseio.com'
+var serviceAccount = require("./uwcalendar-web-secret.json");
+
+// Initialize Firebase server admin account
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://uwcalendar.firebaseio.com"
 });
 
-var db = firebase.database();
+var db = admin.database();
 var requestsRef = db.ref('requests');
 
 app.use(bodyParser.urlencoded({ extended: true }));
