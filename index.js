@@ -31,7 +31,15 @@ router.use(function(req, res, next) {
   next();
 });
 
+////////////////////// WEB ///////////////////////
+
 router.get('/', function(req, res) {
+  res.json({ message: 'Welcome to the UW Calendar!' });
+});
+
+////////////////////// API ///////////////////////
+
+router.get('/api', function(req, res) {
   res.json({ message: 'Welcome to the UW Calendar API!' });
 });
 
@@ -44,7 +52,7 @@ router.get('/', function(req, res) {
  * - connection: connection ID from Firebase
  * - quarter: quarter ID of the form sp16
  */
-router.route('/connect')
+router.route('/api/connect')
   .post(function(req, res) {
     console.log(req.body);
     connect(db, req.body.connectionId, req.body.quarter).then(function resolve(status) {
@@ -56,7 +64,18 @@ router.route('/connect')
     });
   });
 
-app.use('/api', router);
+/**
+ * GET /api/users/
+ * 
+ * Returns a JSON blob of users.
+ */
+router.route('/api/users')
+  .get(function(req, res) {
+    // TODO retrieve users
+    
+  });
+
+app.use('/', router);
 
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
