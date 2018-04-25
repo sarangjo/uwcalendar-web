@@ -1,5 +1,10 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
+    h1= title
+    p Welcome to #{title}!
+
+    form#login(method='post', action='login')
+        input(name='email', hint='email', type='email')
+        input(name='password', hint='password', type='password')
+        button Submit
