@@ -1,39 +1,35 @@
 {
-  "name": "uwcalendar-web",
-  "version": "0.0.1",
-  "description": "The web end of UW Calendar",
-  "engines": {
-    "node": "5.9.1"
-  },
-  "main": "./bin/www",
-  "scripts": {
-    "start": "node ./bin/www",
-    "start-nodemon": "nodemon --watch . ./bin/www"
-  },
-  "dependencies": {
-    "body-parser": "^1.15.2",
-    "cookie-parser": "~1.4.3",
-    "debug": "~2.6.9",
-    "express": "~4.16.0",
-    "firebase": "^4.13.1",
-    "firebase-admin": "^5.0.1",
-    "http-errors": "~1.6.2",
-    "jade": "~1.11.0",
-    "lodash": "^4.16.4",
-    "morgan": "~1.9.0",
-    "npm": "^6.0.0",
-    "pug": "^2.0.3"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/sarangjo/uwcalendar-web"
-  },
-  "keywords": [
-    "node",
-    "heroku",
-    "express",
-    "uwcalendar",
-    "uwcalendar-web"
-  ],
-  "license": "MIT"
+    "name": "uw-cse351-heap-simulation",
+    "version": "1.0.0",
+    "description": "Simulation of the heap developed in UW CSE 351.",
+    "dependencies": {
+        "@material-ui/core": "^1.4.0",
+        "babel": "^5.8.29",
+        "babel-core": "^5.8.32",
+        "babel-loader": "^5.3.2",
+        "css-loader": "^0.24.0",
+        "history": "^1.14.0",
+        "jsx-loader": "^0.13.2",
+        "lodash": "^3.10.1",
+        "npm": "^6.1.0",
+        "react": "^16.3.0",
+        "react-dom": "^16.3.0",
+        "react-redux": "^5.0.7",
+        "redux": "^4.0.0",
+        "style-loader": "^0.13.1",
+        "typeface-roboto": "0.0.54",
+        "webpack": "^1.12.2"
+    },
+    "scripts": {
+        "dev": "cp views/index.html ./index.html && cross-env NODE_ENV=development webpack && webpack-dev-server --content-base ./ --hot --inline --devtool inline-source-map --history-api-fallback",
+        "start": "cp views/index.html ./index.html && webpack"
+    },
+    "author": "Sarang Joshi",
+    "license": "MIT",
+    "devDependencies": {
+        "cross-env": "^5.1.6",
+        "react-hot-loader": "^1.3.1",
+        "webpack-dev-server": "^1.12.1"
+    },
+    "repository": "https://github.com/sarangjo/cse351-heap"
 }
