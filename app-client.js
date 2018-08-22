@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from 'react-dom';
-import Root from './components/Root.react';
+import Root from './pages/Root.react';
 
 // TODO add loader for the font
 // import 'typeface-roboto';
